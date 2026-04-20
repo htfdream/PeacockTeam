@@ -9,7 +9,10 @@ import java.util.stream.Collectors;
 
 
 public class Main {
+
     public static void main(String[] args) throws IOException {
+
+
         long startTime = System.currentTimeMillis();
         Path path;
         if (args.length > 0 && !args[0].isEmpty())
@@ -29,13 +32,16 @@ public class Main {
                 cnt++;
             }
         }
+
         List<UniqueLine> uniqueLines = new ArrayList<>();
         for (String entry : setUniqueLines) {
-            String[] splitLine = entry.split(";");
+            String[] splitLine = entry.split(";",-1);
             if (!Arrays.stream(splitLine).anyMatch(s -> !s.matches("\"\\d*\"")))
                 uniqueLines.add(new UniqueLine(entry, splitLine));
 
         }
+        long stage1Time = System.currentTimeMillis() - startTime;
+
 
         int n = uniqueLines.size();
         System.out.println("Total lines: " + cnt);
@@ -59,15 +65,16 @@ public class Main {
                 String[] parts = uniqueLines.get(row).parts;
                 if (col >= parts.length) continue;
                 String val = parts[col];
-                if (val == null || val.isEmpty()) continue;
+                if (val == null || val.isEmpty() || val.equals("\"\"")) continue;
 
                 Integer prev = valueToRow.put(val, row);
-                if (prev != null) {
+                if (prev != null ) {
                     dsu.union(prev, row);
                 }
             }
         }
 
+        long stage2Time = System.currentTimeMillis() - startTime - stage1Time;
 
         Map<Integer, List<Integer>> groups = new HashMap<>();
         for (int i = 0; i < n; i++) {
@@ -80,6 +87,8 @@ public class Main {
                 .filter(list -> list.size() > 1)
                 .sorted((a, b) -> Integer.compare(b.size(), a.size()))
                 .collect(Collectors.toList());
+
+        long stage3Time = System.currentTimeMillis() - startTime - stage1Time - stage2Time;
 
         long elapsed = System.currentTimeMillis() - startTime;
 
@@ -99,6 +108,10 @@ public class Main {
         System.err.println("Unique lines count: " + n);
         System.err.println("Duplicate lines skipped: " + (cnt - n));
 
+
+        System.err.println("Stage 1 (Read file): " + stage1Time + " ms");
+        System.err.println("Stage 2 (DSU): " + stage2Time + " ms");
+        System.err.println("Stage 3 (Group): " + stage3Time + " ms");
 
         Runtime runtime = Runtime.getRuntime();
         long usedMemory = runtime.totalMemory() - runtime.freeMemory();
