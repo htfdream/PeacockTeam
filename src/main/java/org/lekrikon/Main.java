@@ -164,12 +164,13 @@ public class Main {
     }
 
     private static boolean isQuotedNumber(String s) {
-        if (s.length() < 2) return false; // Минимум ""
+        if(s.isEmpty()) return true;
+        if (s.length() < 2 ) return false; // Минимум ""
         if (s.charAt(0) != '"' || s.charAt(s.length() - 1) != '"') return false;
 
         for (int i = 1; i < s.length() - 1; i++) {
             char c = s.charAt(i);
-            if (c < '0' || c > '9') return false;
+            if (c == '"') return false;
         }
         return true;
     }
