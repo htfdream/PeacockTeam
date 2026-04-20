@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 public class Main {
@@ -24,28 +25,31 @@ public class Main {
 
         Set<String> setUniqueLines = new HashSet<>();
         int cnt = 0;
-        try(BufferedReader reader = Files.newBufferedReader(path)) {
-            String line;
-            while (reader.ready()){
-                line = reader.readLine();
-                setUniqueLines.add(line);
-                cnt++;
-            }
+
+        try (Stream<String> lines = Files.lines(path)) {
+            cnt = (int) lines.peek(setUniqueLines::add).count();
         }
+        long stage01Time = System.currentTimeMillis() - startTime;
 
         List<UniqueLine> uniqueLines = new ArrayList<>();
         for (String entry : setUniqueLines) {
-            String[] splitLine = entry.split(";",-1);
-            if (!Arrays.stream(splitLine).anyMatch(s -> !s.matches("\"\\d*\"")))
-                uniqueLines.add(new UniqueLine(entry, splitLine));
+            String[] splitLine = entry.split(";", -1);
+            boolean valid = true;
 
+            for (String s : splitLine) {
+                if (!isQuotedNumber(s)) {
+                    valid = false;
+                    break;
+                }
+            }
+
+            if (valid) {
+                uniqueLines.add(new UniqueLine(entry, splitLine));
+            }
         }
         long stage1Time = System.currentTimeMillis() - startTime;
 
-
         int n = uniqueLines.size();
-        System.out.println("Total lines: " + cnt);
-        System.out.println("Total unique lines: " + n);
 
         if (n == 0) {
             System.out.println("0");
@@ -68,7 +72,7 @@ public class Main {
                 if (val == null || val.isEmpty() || val.equals("\"\"")) continue;
 
                 Integer prev = valueToRow.put(val, row);
-                if (prev != null ) {
+                if (prev != null) {
                     dsu.union(prev, row);
                 }
             }
@@ -108,7 +112,7 @@ public class Main {
         System.err.println("Unique lines count: " + n);
         System.err.println("Duplicate lines skipped: " + (cnt - n));
 
-
+        System.err.println("Stage 01 (Read file): " + stage01Time + " ms");
         System.err.println("Stage 1 (Read file): " + stage1Time + " ms");
         System.err.println("Stage 2 (DSU): " + stage2Time + " ms");
         System.err.println("Stage 3 (Group): " + stage3Time + " ms");
@@ -132,16 +136,19 @@ public class Main {
     static class DSU {
         int[] parent;
         int[] size;
+
         DSU(int n) {
             parent = new int[n];
             size = new int[n];
             for (int i = 0; i < n; i++) parent[i] = i;
             Arrays.fill(size, 1);
         }
+
         int find(int n) {
             if (parent[n] != n) parent[n] = find(parent[n]);
             return parent[n];
         }
+
         void union(int a, int b) {
             int rootA = find(a);
             int rootB = find(b);
@@ -154,5 +161,16 @@ public class Main {
                 size[rootA] += size[rootB];
             }
         }
+    }
+
+    private static boolean isQuotedNumber(String s) {
+        if (s.length() < 2) return false; // Минимум ""
+        if (s.charAt(0) != '"' || s.charAt(s.length() - 1) != '"') return false;
+
+        for (int i = 1; i < s.length() - 1; i++) {
+            char c = s.charAt(i);
+            if (c < '0' || c > '9') return false;
+        }
+        return true;
     }
 }
